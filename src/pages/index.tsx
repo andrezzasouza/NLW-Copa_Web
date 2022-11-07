@@ -1,4 +1,4 @@
-
+import { FormEvent, useState } from 'react';
 import Image from 'next/image';
 import appPreviewImg from '../assets/mobile-preview.png';
 import logoImg from '../assets/logo.svg';
@@ -6,12 +6,32 @@ import avatars from '../assets/avatars.png';
 import iconCheckImg from '../assets/icon.svg';
 import { api } from '../lib/axios';
 
+
 interface HomeProps {
   poolCount: number;
   guessCount: number;
   userCount: number;
 }
 export default function Home(props: HomeProps) {
+  const [poolTitle, setPoolTitle] = useState('');
+
+  async function createPool(e: FormEvent) {
+    e.preventDefault();
+
+    try {
+      const response = await api.post('/pools', {
+        title: poolTitle,
+      })
+
+      const { code } = response.data;
+      await navigator.clipboard.writeText(code);
+      alert('Bolão criado com sucesso. O código foi copiado pra área de transferência');
+      setPoolTitle('');
+
+    } catch (err) {
+      alert('Falha ao criat o bolão. Tente novamente.');
+    }
+  }
 
   return (
     <div className='max-w-[1124px] h-screen mx-auto grid grid-cols-2 items-center gap-28'>
@@ -32,12 +52,14 @@ export default function Home(props: HomeProps) {
           </strong>
         </div>
 
-        <form className='mt-10 flex gap-2'>
+        <form className='mt-10 flex gap-2' onSubmit={createPool}>
           <input
-            className='flex-1 px-6 py-4 rounded bg-gray-800 border border-gray-600 tx-sm'
+            className='flex-1 px-6 py-4 rounded bg-gray-800 border border-gray-600 tx-sm text-gray-100'
             type="text"
             required 
             placeholder='Qual nome do seu bolão?' 
+            onChange={e => setPoolTitle(e.target.value)}
+            value={poolTitle}
           />
           <button
             className='bg-yellow-500 px-6 py-4 rounded text-gray-900 font-bold text-sm uppercase hover:bg-yellow-700'
@@ -87,7 +109,7 @@ export const getServerSideProps = async () => {
   ] = await Promise.all([
     api.get('pools/count'),
     api.get('guesses/count'),
-    api.get('users/count')
+    api.get('users/count'),
   ])
 
   return {
